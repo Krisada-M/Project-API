@@ -14,7 +14,10 @@ func BarberProfile(f string) gin.HandlerFunc {
 		var (
 			barberID      = c.Param("bid")
 			barber        = models.BarberProfile{}
+			params        = models.GetServiceBooking{}
 			barberList    = []models.BarberProfileOnly{}
+			store         = []models.SalonService{}
+			resStore      = []models.ServiceDetail{}
 			resBarberList = []models.BarberProfileOnlyAndUser{}
 		)
 		switch f {
@@ -37,15 +40,34 @@ func BarberProfile(f string) gin.HandlerFunc {
 				})
 			}
 
-			c.JSON(http.StatusOK, helper.D{"barber_detail": resBarberList, "test": barberList}.APIResponse())
+			c.JSON(http.StatusOK, helper.D{"barber_detail": resBarberList}.APIResponse())
 			return
 		case "B-ID":
+			if err := c.BindJSON(&params); err != nil {
+				c.JSON(http.StatusOK, helper.D{"Message": err}.APIResponse())
+			}
 			result := DB.Preload("Books").Table("barber_profiles").Where("id = ?", barberID).Find(&barber)
 			if result.Error != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"Message": result.Error.Error()})
 				return
 			}
-			c.JSON(http.StatusOK, helper.D{"barber_detail": barber}.APIResponse())
+			result = DB.Table("salon_services").Where("barber_id = ? AND date = ? AND status IN ?", barberID, params.Date, []string{"approve", "closed"}).Find(&store)
+			if result.Error != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"Message": result.Error.Error()})
+				return
+			}
+			for _, v := range store {
+				resStore = append(resStore, models.ServiceDetail{
+					Status:    v.Status,
+					Date:      v.Date,
+					TimeStart: v.TimeStart,
+					TimeEnd:   v.TimeEnd,
+					Service:   v.Service,
+					BarberID:  v.BarberID,
+					UserID:    v.UserID,
+				})
+			}
+			c.JSON(http.StatusOK, helper.D{"barber_detail": barber, "booking_detail": resStore}.APIResponse())
 			return
 		}
 	}
@@ -66,7 +88,7 @@ func AddBarber() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"Message": result.Error})
 			return
 		}
-		c.JSON(http.StatusOK, helper.D{"service_id": barber.ID}.APIResponse())
+		c.JSON(http.StatusOK, helper.D{"barber_id": barber.ID}.APIResponse())
 		return
 	}
 }
@@ -83,7 +105,16 @@ func LiveSearchBarber() gin.HandlerFunc {
 			BarberProfile("All")
 			return
 		}
-		result := DB.Table("barber_profiles").Where("name LIKE ? AND gender LIKE ?", "%"+search.Keyword+"%", "%"+search.Gender+"%").Find(&barberList)
+		result := DB.Table("barber_profiles").Where("name LIKE ? ", "%"+search.Keyword+"%").Find(&barberList)
+		if search.Gender != "" && search.Service == "" {
+			result = DB.Table("barber_profiles").Where("name LIKE ? AND gender LIKE ?", "%"+search.Keyword+"%", "%"+search.Gender+"%").Find(&barberList)
+		}
+		if search.Service != "" && search.Gender == "" {
+			result = DB.Raw("SELECT * FROM barber_profiles WHERE name LIKE ? AND ? IN (service1,service2,service3,service4)", "%"+search.Keyword+"%", search.Service).Scan(&barberList)
+		}
+		if search.Gender != "" && search.Service != "" {
+			result = DB.Raw("SELECT * FROM barber_profiles WHERE name LIKE ? AND gender LIKE ? AND ? IN (service1,service2,service3,service4)", "%"+search.Keyword+"%", "%"+search.Gender+"%", search.Service).Scan(&barberList)
+		}
 		if result.Error != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"Message": result.Error})
 			return

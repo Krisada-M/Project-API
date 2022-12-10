@@ -35,8 +35,8 @@ func Dbcon() *gorm.DB {
 		panic(err)
 	}
 	fmt.Println("Connected to Database!")
-
-	db.AutoMigrate(&models.User{}, &models.BarberProfile{}, &models.SalonService{}, &models.ServiceList{})
+	db.AutoMigrate(&models.User{}, &models.BarberProfile{}, &models.SalonService{})
+	db.AutoMigrate(&models.ServiceList{}, &models.ServiceMetaData{}, &models.UserNotification{})
 	// db.Migrator().DropTable(&models.User{}, &models.BarberProfile{}, &models.SalonService{})
 	fmt.Println("Database Migration Completed!")
 	return db

@@ -12,6 +12,7 @@ func MapRoutes(router *gin.Engine) {
 
 	AuthRoute(router)
 	BarberRoute(router)
+	ServiceRoute(router)
 	router.Use(middleware.Authenticate())
 	// user
 	UserRoutes(router)

@@ -81,3 +81,10 @@ type UserOTP struct {
 	TokenID string `json:"token_id" validate:"required"`
 	Token   string `json:"token" validate:"required"`
 }
+
+// UserNotification set notification
+type UserNotification struct {
+	ID                 uint   `gorm:"primarykey"`
+	UID                uint   `json:"uid"`
+	NotificationDetail string `json:"noti_detail"`
+}
