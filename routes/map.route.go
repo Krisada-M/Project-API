@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"Restapi/controllers"
 	"Restapi/middleware"
 	"net/http"
 
@@ -9,15 +10,16 @@ import (
 
 // MapRoutes Map
 func MapRoutes(router *gin.Engine) {
-
-	AuthRoute(router)
-	BarberRoute(router)
-	ServiceRoute(router)
-	router.Use(middleware.Authenticate())
+	app := router.Group("/app-json/v1/")
+	AuthRoute(app)
+	BarberRoute(app)
+	ServiceRoute(app)
+	app.Use(middleware.Authenticate())
+	app.GET("checktype", controllers.CheckUserType())
 	// user
-	UserRoutes(router)
+	UserRoutes(app)
 	//admin
-	AdminRoutes(router)
+	AdminRoutes(app)
 
 	router.NoRoute(Stoproute)
 }

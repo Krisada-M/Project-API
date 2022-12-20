@@ -7,8 +7,8 @@ import (
 )
 
 // ServiceRoute is Route for non Authorization
-func ServiceRoute(router *gin.Engine) {
-	service := router.Group("/app-json/v1/service")
+func ServiceRoute(router *gin.RouterGroup) {
+	service := router.Group("service")
 	service.GET("/list", controllers.GetServiceList())
 	service.POST("/add-booking", controllers.AddBooking())
 }

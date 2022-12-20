@@ -7,8 +7,8 @@ import (
 )
 
 // BarberRoute is Route for non Authorization
-func BarberRoute(router *gin.Engine) {
-	barber := router.Group("/app-json/v1/barber")
+func BarberRoute(router *gin.RouterGroup) {
+	barber := router.Group("barber")
 	barber.POST("/search", controllers.LiveSearchBarber())
 	barber.GET("/list", controllers.BarberProfile("All"))
 	barber.POST("/:bid", controllers.BarberProfile("B-ID"))

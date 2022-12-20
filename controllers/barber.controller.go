@@ -1,9 +1,11 @@
 package controllers
 
 import (
+	"Restapi/config"
 	"Restapi/helper"
 	"Restapi/models"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -12,13 +14,16 @@ import (
 func BarberProfile(f string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var (
-			barberID      = c.Param("bid")
-			barber        = models.BarberProfile{}
-			params        = models.GetServiceBooking{}
-			barberList    = []models.BarberProfileOnly{}
-			store         = []models.SalonService{}
-			resStore      = []models.ServiceDetail{}
-			resBarberList = []models.BarberProfileOnlyAndUser{}
+			Count              int64
+			barberID           = c.Param("bid")
+			barber             = models.BarberProfile{}
+			params             = models.GetServiceBooking{}
+			barberAll          = []models.BarberProfile{}
+			barberList         = []models.BarberProfileOnly{}
+			store              = []models.SalonService{}
+			resStore           = []models.ServiceDetail{}
+			resBarberList      = []models.BarberProfileOnlyAndUser{}
+			resBarberListAdmin = []models.BarberProfileOnlyAdmin{}
 		)
 		switch f {
 		case "All":
@@ -69,6 +74,34 @@ func BarberProfile(f string) gin.HandlerFunc {
 			}
 			c.JSON(http.StatusOK, helper.D{"barber_detail": barber, "booking_detail": resStore}.APIResponse())
 			return
+		case "B-All":
+			result := DB.Preload("Books").Table("barber_profiles").Order("id asc").Find(&barberAll)
+			if result.Error != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"Message": result.Error.Error()})
+				return
+			}
+
+			for _, b := range barberAll {
+				result = DB.Table("salon_services").Where("barber_id = ? AND date = ? AND status IN ?", b.ID, config.BookDate, []string{"approve", "closed"}).Find(&store).Count(&Count)
+				if result.Error != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"Message": result.Error.Error()})
+					return
+				}
+				resBarberListAdmin = append(resBarberListAdmin, models.BarberProfileOnlyAdmin{
+					ID:        b.ID,
+					Name:      b.Name,
+					Status:    b.Status,
+					Gender:    b.Gender,
+					Service1:  b.Service1,
+					Service2:  b.Service2,
+					Service3:  b.Service3,
+					Service4:  b.Service4,
+					BookInDay: strconv.FormatInt(Count, 10),
+					AllBook:   strconv.Itoa(len(b.Books)),
+				})
+			}
+			c.JSON(http.StatusOK, helper.D{"barber_detail": resBarberListAdmin}.APIResponse())
+			return
 		}
 	}
 }
@@ -90,6 +123,48 @@ func AddBarber() gin.HandlerFunc {
 		}
 		c.JSON(http.StatusOK, helper.D{"barber_id": barber.ID}.APIResponse())
 		return
+	}
+}
+
+// ChangeStatus for admin change status barber
+func ChangeStatus() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var (
+			params = models.ChangeStatus{}
+		)
+		if err := c.BindJSON(&params); err != nil {
+			c.JSON(http.StatusOK, helper.D{"Message": err}.APIResponse())
+		}
+		result := DB.Table("barber_profiles").Where("id = ?", params.BID).Update("status", params.Status)
+		if result.Error != nil {
+			c.JSON(http.StatusNotFound, gin.H{"Message": "User not found"})
+			return
+		}
+		c.JSON(http.StatusOK, helper.D{"barber": params.BID + " status has update"}.APIResponse())
+	}
+}
+
+// DeleteBarber for admin remove barber
+func DeleteBarber() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var (
+			barberID = c.Param("bid")
+			barber   = models.BarberProfile{}
+		)
+
+		result := DB.Table("barber_profiles").Where("id = ?", barberID).Find(&barber)
+		if result.Error != nil {
+			c.JSON(http.StatusNotFound, gin.H{"Message": "Barber not found"})
+			return
+		}
+
+		result = DB.Delete(&barber)
+		if result.Error != nil {
+			c.JSON(http.StatusNotFound, gin.H{"Message": "Barber not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, helper.D{"barber": barberID + "delete success"}.APIResponse())
 	}
 }
 

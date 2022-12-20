@@ -66,3 +66,10 @@ type AddBookingService struct {
 	HairThickness    string  `json:"hair_thickness"`
 	UniquenessOfHair string  `json:"uniqueness_of_hair"`
 }
+
+// UpadateBooking model for func UpdateStatusBooking
+type UpadateBooking struct {
+	ServiceID string  `json:"service_id"`
+	Status    *string `json:"status"`
+	TimeEnd   string  `json:"time_end"`
+}

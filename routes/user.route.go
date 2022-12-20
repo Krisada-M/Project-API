@@ -8,8 +8,8 @@ import (
 )
 
 // UserRoutes is Route for user after login
-func UserRoutes(router *gin.Engine) {
-	user := router.Group("/app-json/v1/user", middleware.AccountAuthenticate("USER"))
+func UserRoutes(router *gin.RouterGroup) {
+	user := router.Group("user", middleware.AccountAuthenticate("USER"))
 	user.GET("/", controllers.GetUser())
 	user.POST("/update", controllers.UpdateUser())
 	// user.POST("/service", controllers.UserService("R"))

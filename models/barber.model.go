@@ -41,6 +41,20 @@ type BarberProfileOnlyAndUser struct {
 	Service4 *string `json:"service4"`
 }
 
+// BarberProfileOnlyAdmin is Profile in salon
+type BarberProfileOnlyAdmin struct {
+	ID        uint    `json:"id"`
+	Name      *string `json:"name,omitempty" validate:"required,min=2,max=100"`
+	Gender    *string `json:"gender,omitempty" validate:"required,min=2,max=100"`
+	Status    *string `json:"status" validate:"required,min=2,max=100"`
+	Service1  *string `json:"service1"`
+	Service2  *string `json:"service2"`
+	Service3  *string `json:"service3"`
+	Service4  *string `json:"service4"`
+	BookInDay string  `json:"bookinday"`
+	AllBook   string  `json:"allday"`
+}
+
 // UserInBprofile in BarberProfileOnlyAndUser is Profile in salon
 type UserInBprofile struct {
 	Name     string
@@ -55,4 +69,10 @@ type LiveSearch struct {
 	Keyword string `json:"keyword"`
 	Service string `json:"service"`
 	Gender  string `json:"gender"`
+}
+
+// ChangeStatus in update status
+type ChangeStatus struct {
+	BID    string `json:"barber_id"`
+	Status string `json:"status"`
 }

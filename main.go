@@ -26,9 +26,7 @@ func lambdaHandler(ctx context.Context, req events.APIGatewayProxyRequest) (even
 }
 
 func ginEngine() *gin.Engine {
-	// gin.SetMode(gin.ReleaseMode)
 	app := gin.Default()
-	// app.SetTrustedProxies([]string{"127.0.0.1"})
 	app.Use(corsMiddleware())
 	config.ConnectMailer(
 		os.Getenv("MAILER_USERNAME"),

@@ -7,8 +7,7 @@ import (
 )
 
 // AuthRoute is Route for non Authorization
-func AuthRoute(router *gin.Engine) {
-	general := router.Group("/app-json/v1/")
+func AuthRoute(general *gin.RouterGroup) {
 	general.GET("/", func(c *gin.Context) {
 		c.JSON(202, gin.H{"success": "Access granted for General User"})
 		return
