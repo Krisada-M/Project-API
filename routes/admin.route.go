@@ -24,6 +24,8 @@ func AdminRoutes(router *gin.RouterGroup) {
 	admin.GET("/booking-closed", controllers.GetBookingByStatus("closed"))
 	admin.GET("/booking-unapproved", controllers.GetBookingByStatus("unapproved"))
 	admin.POST("/barber-status", controllers.ChangeStatus())
+	admin.POST("/barber-add", controllers.AddBarber())
+	admin.POST("/barber-edit/:bid", controllers.EditBarber())
 	admin.POST("/barber-delete/:bid", controllers.DeleteBarber())
 	admin.POST("/booking-status", controllers.UpdateStatusBooking())
 	admin.POST("/booking-remove/:sid", controllers.DeleteBooking())

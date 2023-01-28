@@ -73,3 +73,23 @@ type UpadateBooking struct {
 	Status    *string `json:"status"`
 	TimeEnd   string  `json:"time_end"`
 }
+
+// Status is update status
+type Status struct {
+	Status *bool `json:"status"`
+}
+
+// ResponseAdminServiceDetail is get service data and meta
+type ResponseAdminServiceDetail struct {
+	ID               uint    `json:"ID"`
+	Service          *string `json:"service"`
+	Date             *string `json:"date"`
+	Status           *string `json:"status"`
+	TimeStart        *string `json:"time_start"`
+	TimeEnd          string  `json:"time_end"`
+	Barber           *string `json:"barber"`
+	User             *string `json:"user"`
+	LengthHair       string  `json:"length_hair"`
+	HairThickness    string  `json:"hair_thickness"`
+	UniquenessOfHair string  `json:"uniqueness_of_hair"`
+}

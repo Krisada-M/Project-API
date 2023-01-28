@@ -12,6 +12,8 @@ func AuthRoute(general *gin.RouterGroup) {
 		c.JSON(202, gin.H{"success": "Access granted for General User"})
 		return
 	})
+	general.GET("/status", controllers.GetStatus())
+	general.POST("/set-status", controllers.SetStatus())
 	general.POST("/check-email", controllers.CheckEmail())
 	general.POST("/register", controllers.Register())
 	general.POST("/login", controllers.Login())

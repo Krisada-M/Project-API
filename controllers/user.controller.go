@@ -93,7 +93,7 @@ func Register() gin.HandlerFunc {
 func Login() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var (
-			user      models.UserLogin
+			user              = models.UserLogin{}
 			foundUser         = new(models.User)
 			loginType *string = nil
 		)
@@ -128,7 +128,7 @@ func Login() gin.HandlerFunc {
 
 		result := DB.Where(user.LoginType+" = ?", loginType).Find(&foundUser)
 		if result.Error != nil {
-			c.JSON(http.StatusNotFound, gin.H{"Message": "is Incorrect"})
+			c.JSON(http.StatusNotFound, gin.H{"Message": "is Incorrect" + result.Error.Error()})
 			return
 		}
 

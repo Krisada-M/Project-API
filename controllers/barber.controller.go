@@ -109,9 +109,8 @@ func BarberProfile(f string) gin.HandlerFunc {
 // AddBarber admin
 func AddBarber() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var (
-			barber = models.BarberProfile{}
-		)
+		var barber = models.BarberProfile{}
+
 		if err := c.BindJSON(&barber); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"Message": err.Error()})
 			return
@@ -126,16 +125,45 @@ func AddBarber() gin.HandlerFunc {
 	}
 }
 
+// EditBarber admin
+func EditBarber() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var (
+			barber   = models.BarberProfileOnlyAndUser{}
+			barberID = c.Param("bid")
+		)
+
+		if err := c.BindJSON(&barber); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"Message": err.Error()})
+			return
+		}
+		result := DB.Table("barber_profiles").Where("id = ?", barberID).Updates(models.BarberProfileOnlyAndUser{
+			Name:     barber.Name,
+			Gender:   barber.Gender,
+			Service1: barber.Service1,
+			Service2: barber.Service2,
+			Service3: barber.Service3,
+			Service4: barber.Service4,
+		})
+
+		if result.Error != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"Message": result.Error})
+			return
+		}
+		c.JSON(http.StatusOK, helper.D{"barber_id": barberID + " barber has update"}.APIResponse())
+	}
+}
+
 // ChangeStatus for admin change status barber
 func ChangeStatus() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var (
-			params = models.ChangeStatus{}
-		)
+		var params = models.ChangeStatus{}
+
 		if err := c.BindJSON(&params); err != nil {
 			c.JSON(http.StatusOK, helper.D{"Message": err}.APIResponse())
 		}
 		result := DB.Table("barber_profiles").Where("id = ?", params.BID).Update("status", params.Status)
+
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"Message": "User not found"})
 			return
@@ -151,14 +179,14 @@ func DeleteBarber() gin.HandlerFunc {
 			barberID = c.Param("bid")
 			barber   = models.BarberProfile{}
 		)
-
 		result := DB.Table("barber_profiles").Where("id = ?", barberID).Find(&barber)
+
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"Message": "Barber not found"})
 			return
 		}
-
 		result = DB.Delete(&barber)
+
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"Message": "Barber not found"})
 			return

@@ -4,10 +4,13 @@ import (
 	"Restapi/helper"
 	"Restapi/models"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
+var status *bool
 
 // GetServiceList is get all service in salon
 func GetServiceList() gin.HandlerFunc {
@@ -68,10 +71,38 @@ func CheckUserType() gin.HandlerFunc {
 	}
 }
 
+// GetStatus is filter type for client
+func GetStatus() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": status})
+		return
+	}
+}
+
+// SetStatus is filter type for client
+func SetStatus() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var service = models.Status{}
+		if err := c.BindJSON(&service); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"Message": err.Error()})
+			return
+		}
+		status = service.Status
+		c.JSON(http.StatusOK, gin.H{"status": status})
+		return
+	}
+}
+
 // GetBookingByStatus for admin manage
 func GetBookingByStatus(status string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var bookingList = []models.SalonService{}
+		var (
+			bookingList = []models.SalonService{}
+			bookingMeta = models.ServiceMetaData{}
+			barber      = models.BarberProfileOnlyAndUser{}
+			user        = models.User{}
+			response    = []models.ResponseAdminServiceDetail{}
+		)
 
 		result := DB.Table("salon_services").Where("status = ?", status).Order("created_at DESC").Find(&bookingList)
 		if result.Error != nil {
@@ -79,7 +110,30 @@ func GetBookingByStatus(status string) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, helper.D{"booking_list": bookingList}.APIResponse())
+		for _, d := range bookingList {
+			result := DB.Table("service_meta_data").Where("service_id = ?", d.ID).Find(&bookingMeta)
+			result = DB.Table("barber_profiles").Where("id = ?", d.BarberID).Find(&barber)
+			result = DB.Table("users").Where("id = ?", d.UserID).Find(&user)
+			if result.Error != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"Message": result.Error.Error()})
+				return
+			}
+			response = append(response, models.ResponseAdminServiceDetail{
+				ID:               d.ID,
+				Service:          d.Service,
+				Date:             d.Date,
+				Status:           d.Status,
+				TimeStart:        d.TimeStart,
+				TimeEnd:          d.TimeEnd,
+				Barber:           barber.Name,
+				User:             user.Firstname,
+				LengthHair:       bookingMeta.LengthHair,
+				HairThickness:    bookingMeta.HairThickness,
+				UniquenessOfHair: bookingMeta.UniquenessOfHair,
+			})
+		}
+
+		c.JSON(http.StatusOK, helper.D{"booking_list": response}.APIResponse())
 		return
 	}
 }
@@ -88,8 +142,11 @@ func GetBookingByStatus(status string) gin.HandlerFunc {
 func UpdateStatusBooking() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var (
-			service = models.UpadateBooking{}
-			result  *gorm.DB
+			foundUser  = models.User{}
+			service    = models.UpadateBooking{}
+			getService = models.SalonService{}
+			send       = helper.Mailer{}
+			result     *gorm.DB
 		)
 		if err := c.BindJSON(&service); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"Message": err.Error()})
@@ -97,14 +154,24 @@ func UpdateStatusBooking() gin.HandlerFunc {
 		}
 
 		if service.TimeEnd != "" {
-			result = DB.Table("salon_services").Where("id = ?", service.ServiceID).Select("status", "time_end").Updates(models.SalonService{Status: service.Status, TimeEnd: service.TimeEnd})
+			result = DB.Table("salon_services").Where("id = ?", service.ServiceID).Scan(&getService).Select("status", "time_end").Updates(models.SalonService{Status: service.Status, TimeEnd: service.TimeEnd})
 		} else {
-			result = DB.Table("salon_services").Where("id = ?", service.ServiceID).Update("status", service.Status)
+			result = DB.Table("salon_services").Where("id = ?", service.ServiceID).Scan(&getService).Update("status", service.Status)
 		}
 
 		if result.Error != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"Message": result.Error.Error()})
 			return
+		}
+
+		if strings.Compare(*service.Status, "approve") == 0 {
+			result = DB.Table("users").Where("id = ?", getService.UserID).Scan(&foundUser)
+			if result.Error != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"Message": result.Error.Error()})
+				return
+			}
+
+			send.ApproveBookingSendMail(foundUser, *getService.Date, *getService.Service, *getService.TimeStart)
 		}
 
 		c.JSON(http.StatusOK, helper.D{"booking_id": service.ServiceID + " has update"}.APIResponse())
