@@ -12,7 +12,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-lambda-go v1.19.1 // indirect
+	github.com/aws/aws-lambda-go v1.37.0 // indirect
 	github.com/goccy/go-json v0.9.10 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect

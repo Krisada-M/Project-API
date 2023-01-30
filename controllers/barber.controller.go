@@ -210,13 +210,13 @@ func LiveSearchBarber() gin.HandlerFunc {
 		}
 		result := DB.Table("barber_profiles").Where("name LIKE ? ", "%"+search.Keyword+"%").Find(&barberList)
 		if search.Gender != "" && search.Service == "" {
-			result = DB.Table("barber_profiles").Where("name LIKE ? AND gender LIKE ?", "%"+search.Keyword+"%", "%"+search.Gender+"%").Find(&barberList)
+			result = DB.Table("barber_profiles").Where("name LIKE ? AND gender = ?", "%"+search.Keyword+"%", search.Gender).Find(&barberList)
 		}
 		if search.Service != "" && search.Gender == "" {
 			result = DB.Raw("SELECT * FROM barber_profiles WHERE name LIKE ? AND ? IN (service1,service2,service3,service4)", "%"+search.Keyword+"%", search.Service).Scan(&barberList)
 		}
 		if search.Gender != "" && search.Service != "" {
-			result = DB.Raw("SELECT * FROM barber_profiles WHERE name LIKE ? AND gender LIKE ? AND ? IN (service1,service2,service3,service4)", "%"+search.Keyword+"%", "%"+search.Gender+"%", search.Service).Scan(&barberList)
+			result = DB.Raw("SELECT * FROM barber_profiles WHERE name LIKE ? AND gender = ? AND ? IN (service1,service2,service3,service4)", "%"+search.Keyword+"%", search.Gender, search.Service).Scan(&barberList)
 		}
 		if result.Error != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"Message": result.Error})

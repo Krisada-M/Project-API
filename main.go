@@ -2,6 +2,8 @@ package main
 
 import (
 	"Restapi/config"
+	"Restapi/database"
+	"Restapi/models"
 	"Restapi/routes"
 	"context"
 	"log"
@@ -34,6 +36,7 @@ func ginEngine() *gin.Engine {
 	)
 	app.Use(gin.Logger())
 	app.GET("/", test)
+	app.GET("/migrate", migrate)
 	app.NoRoute(routes.Stoproute)
 	routes.MapRoutes(app)
 	return app
@@ -58,9 +61,26 @@ func test(c *gin.Context) {
 	return
 }
 
+func migrate(c *gin.Context) {
+	database.DB.AutoMigrate(&models.User{}, &models.BarberProfile{}, &models.SalonService{}, &models.ServiceList{}, &models.ServiceMetaData{})
+	database.DB.AutoMigrate(&models.ServiceList{}, &models.ServiceMetaData{})
+	c.JSON(http.StatusOK, gin.H{"message": "Database Migration Completed!"})
+	c.Abort()
+	return
+}
+
 func main() {
-	if gin.Mode() == "release" {
+	if gin.Mode() == "release" && os.Getenv("Mode") == "" {
 		lambda.Start(lambdaHandler)
+	} else if os.Getenv("Mode") == "test" {
+		config.Envload()
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "80"
+		}
+		gin.SetMode(gin.ReleaseMode)
+		app := ginEngine()
+		log.Fatal(app.Run(":" + port))
 	} else {
 		config.Envload()
 		port := os.Getenv("PORT")

@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // DB is database connection
@@ -15,12 +17,14 @@ var DB *gorm.DB = Dbcon()
 
 // Dbcon is a function for connecting to a database.
 func Dbcon() *gorm.DB {
-	config.Envload()
+	if gin.Mode() != "release" {
+		config.Envload()
+	}
 
 	//Production
 	dbURL := os.Getenv("DATABASE_URL")
 	db, err := gorm.Open(postgres.Open(dbURL), &gorm.Config{
-		// Logger:                 logger.Default.LogMode(logger.Silent),
+		Logger:                 logger.Default.LogMode(logger.Silent),
 		PrepareStmt:            true,
 		SkipDefaultTransaction: true,
 	})
@@ -29,9 +33,11 @@ func Dbcon() *gorm.DB {
 		panic(err)
 	}
 	fmt.Println("Connected to Database!")
-	db.AutoMigrate(&models.User{}, &models.BarberProfile{}, &models.SalonService{})
-	db.AutoMigrate(&models.ServiceList{}, &models.ServiceMetaData{}, &models.UserNotification{})
+	if gin.Mode() != "release" {
+		db.AutoMigrate(&models.User{}, &models.BarberProfile{}, &models.SalonService{}, &models.ServiceList{}, &models.ServiceMetaData{})
+		db.AutoMigrate(&models.ServiceList{}, &models.ServiceMetaData{})
+		fmt.Println("Database Migration Completed!")
+	}
 	// db.Migrator().DropTable(&models.User{}, &models.BarberProfile{}, &models.SalonService{})
-	fmt.Println("Database Migration Completed!")
 	return db
 }
