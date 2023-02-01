@@ -4,13 +4,17 @@ import (
 	"Restapi/helper"
 	"Restapi/models"
 	"net/http"
-	"strings"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-var status *bool
+var (
+	status    *bool
+	setStatus int = 0
+)
 
 // GetServiceList is get all service in salon
 func GetServiceList() gin.HandlerFunc {
@@ -74,6 +78,16 @@ func CheckUserType() gin.HandlerFunc {
 // GetStatus is filter type for client
 func GetStatus() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		num, _ := strconv.ParseFloat(time.Now().Format("15.04"), 64)
+		if 19.00 > num && num > 9.00 && setStatus == 0 {
+			c.JSON(http.StatusOK, gin.H{"status": true})
+			return
+		}
+		if 19.00 < num || num < 9.00 {
+			c.JSON(http.StatusOK, gin.H{"status": false})
+			setStatus = 0
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{"status": status})
 		return
 	}
@@ -88,6 +102,7 @@ func SetStatus() gin.HandlerFunc {
 			return
 		}
 		status = service.Status
+		setStatus++
 		c.JSON(http.StatusOK, gin.H{"status": status})
 		return
 	}
@@ -98,9 +113,6 @@ func GetBookingByStatus(status string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var (
 			bookingList = []models.SalonService{}
-			bookingMeta = models.ServiceMetaData{}
-			barber      = models.BarberProfileOnlyAndUser{}
-			user        = models.User{}
 			response    = []models.ResponseAdminServiceDetail{}
 		)
 
@@ -111,6 +123,11 @@ func GetBookingByStatus(status string) gin.HandlerFunc {
 		}
 
 		for _, d := range bookingList {
+			var (
+				bookingMeta = models.ServiceMetaData{}
+				barber      = models.BarberProfileOnlyAndUser{}
+				user        = models.User{}
+			)
 			result := DB.Table("service_meta_data").Where("service_id = ?", d.ID).Find(&bookingMeta)
 			result = DB.Table("barber_profiles").Where("id = ?", d.BarberID).Find(&barber)
 			result = DB.Table("users").Where("id = ?", d.UserID).Find(&user)
@@ -163,8 +180,8 @@ func UpdateStatusBooking() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"Message": result.Error.Error()})
 			return
 		}
-
-		if strings.Compare(*service.Status, "approve") == 0 {
+		switch *service.Status {
+		case "approve":
 			result = DB.Table("users").Where("id = ?", getService.UserID).Scan(&foundUser)
 			if result.Error != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"Message": result.Error.Error()})
@@ -172,6 +189,16 @@ func UpdateStatusBooking() gin.HandlerFunc {
 			}
 
 			send.ApproveBookingSendMail(foundUser, *getService.Date, *getService.Service, *getService.TimeStart)
+			break
+		case "unapproved":
+			result = DB.Table("users").Where("id = ?", getService.UserID).Scan(&foundUser)
+			if result.Error != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"Message": result.Error.Error()})
+				return
+			}
+
+			send.UnApproveBookingSendMail(foundUser, *getService.Date, *getService.Service, *getService.TimeStart)
+			break
 		}
 
 		c.JSON(http.StatusOK, helper.D{"booking_id": service.ServiceID + " has update"}.APIResponse())

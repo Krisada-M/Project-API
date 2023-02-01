@@ -2,8 +2,6 @@ package helper
 
 import (
 	"log"
-	"strconv"
-	"time"
 
 	"Restapi/config"
 	"Restapi/models"
@@ -38,21 +36,33 @@ func (m *Mailer) OtpSendMail(foundUser models.User, otp, ref string) {
 
 // ApproveBookingSendMail is send E-mail with Otp
 func (m *Mailer) ApproveBookingSendMail(foundUser models.User, date, service, timeStart string) {
-	var (
-		tn, _ = time.Parse("2006-01-02", date)
-		Day   = strconv.Itoa(tn.Day())
-		Month = config.Monthlist[tn.Month()-1]
-		Year  = strconv.Itoa(tn.Year() + 543)
-	)
+	Day, Month, Year := config.GetTime(date)
 	message := gomail.NewMessage()
 	message.SetHeader("From", "noreply@hairapppointment.com")
 	message.SetHeader("To", *foundUser.Email)
 	message.SetHeader("Subject", "Hello! "+*foundUser.Firstname)
-	message.SetBody("text/html", "<h1 style='margin:0; color:blue;'> Hairapppointment </h1>"+
+	message.SetBody("text/html", "<h1 style='margin:0; color:green;'> Hairapppointment </h1>"+
 		"<br> <h2>สวัสดี "+*foundUser.Firstname+" "+*foundUser.Lastname+"</h2>"+
-		"<br> <center><h2>บริการ "+service+" ที่คุณจองได้รับการยืนยันแล้ว</h2><br>"+
+		"<br> <center><h2 style='margin:0; color:green;'>บริการ "+service+" ที่คุณจองได้รับการยืนยันแล้ว</h2><br>"+
 		"<h3>โปรดมาในวันที่ "+Day+" "+Month+" "+Year+" เวลา "+timeStart+" น.</h3><br>"+
 		"<span>** โปรดมาก่อนเวลานัดหมายประมาณ 15 นาที **<span>"+"</center>")
+
+	m.Send(message)
+}
+
+// UnApproveBookingSendMail is send E-mail with Otp
+func (m *Mailer) UnApproveBookingSendMail(foundUser models.User, date, service, timeStart string) {
+	Day, Month, Year := config.GetTime(date)
+	message := gomail.NewMessage()
+	message.SetHeader("From", "noreply@hairapppointment.com")
+	message.SetHeader("To", *foundUser.Email)
+	message.SetHeader("Subject", "Hello! "+*foundUser.Firstname)
+	message.SetBody("text/html", "<h1 style='margin:0; color:red;'> Hairapppointment </h1>"+
+		"<br> <h2>สวัสดี "+*foundUser.Firstname+" "+*foundUser.Lastname+"</h2>"+
+		"<br> <center><h2 style='margin:0; color:red;'>บริการ "+service+" ที่คุณจองได้รับการปฏิเสธจากแอดมิน</h2><br>"+
+		"<h3>เนื่องจากใหนวันที่ "+Day+" "+Month+" "+Year+" เวลา "+timeStart+" น. มีผู้ใช้บริการท่านอื่นจองมาก่อนหน้านี้แล้ว</h3><br>"+
+		"<span>ขออภัยในความไม่สะดวกโปรดทำการจองใหม่อีกครั้งผ่านลิ้งค์ด้านล่าง<span><br>"+
+		"<span>https://dream-salon.vercel.app/<span>"+"</center>")
 
 	m.Send(message)
 }

@@ -34,3 +34,12 @@ var (
 	Date     = (Day + " " + Month + " พ.ศ." + Year + " เวลา " + Time)
 	BookDate = strconv.Itoa(tn.Year()) + "-" + strconv.Itoa(int(tn.Month())) + "-" + Day
 )
+
+// GetTime For Send e-mail
+func GetTime(date string) (day, month, year string) {
+	dateTime, _ := time.Parse("2006-01-02", date)
+	Day := strconv.Itoa(dateTime.Day())
+	Month := Monthlist[dateTime.Month()-1]
+	Year := strconv.Itoa(dateTime.Year() + 543)
+	return Day, Month, Year
+}
