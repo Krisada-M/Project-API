@@ -33,8 +33,6 @@ func Dbcon() *gorm.DB {
 	}
 	fmt.Println("Connected to Database!")
 	if gin.Mode() != "release" {
-		// db.AutoMigrate(&models.User{}, &models.BarberProfile{}, &models.SalonService{}, &models.ServiceList{}, &models.ServiceMetaData{})
-		// db.AutoMigrate(&models.ServiceList{}, &models.ServiceMetaData{})
 		fmt.Println("Database Migration Completed!")
 	}
 	// db.Migrator().DropTable(&models.User{}, &models.BarberProfile{}, &models.SalonService{})
